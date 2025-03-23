@@ -121,11 +121,11 @@ impl TwitchClient {
         // Log that we're trying to join
         info!("Attempting to join channel: {}", channel);
         
-        // The Twitch IRC library doesn't want the # prefix - let's remove it if it's there
+        // The Twitch IRC library wants lowercase channel name without # prefix
         let channel_name = if channel.starts_with('#') {
-            channel.trim_start_matches('#').to_string()
+            channel.trim_start_matches('#').to_lowercase()
         } else {
-            channel.to_string()
+            channel.to_lowercase()
         };
         
         info!("Formatted channel name for joining: {}", channel_name);
@@ -162,11 +162,11 @@ impl TwitchClient {
     /// # Returns
     /// A Result indicating success or failure
     pub async fn send_message(&mut self, channel: &str, message: &str, username: &str) -> Result<()> {
-        // The Twitch IRC library doesn't want the # prefix - let's remove it if it's there
+        // The Twitch IRC library wants lowercase channel name without # prefix
         let channel_name = if channel.starts_with('#') {
-            channel.trim_start_matches('#').to_string()
+            channel.trim_start_matches('#').to_lowercase()
         } else {
-            channel.to_string()
+            channel.to_lowercase()
         };
         
         info!("Sending message to {}: {}", channel_name, message);
