@@ -232,7 +232,24 @@ async fn start_bot(_debug: bool, prefix: String, channel_override: Option<String
         let mut incoming_messages = incoming_messages;
         
         info!("Waiting for messages...");
+        
+        // Add a test log every 10 seconds to confirm the task is still running
+        let message_task = Arc::new(tokio::sync::Mutex::new(0));
+        let message_task_clone = message_task.clone();
+        
+        // Spawn a task to periodically log that we're still waiting for messages
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+                let mut counter = message_task_clone.lock().await;
+                *counter += 1;
+                info!("Still waiting for messages... (heartbeat: {})", *counter);
+            }
+        });
+        
         while let Some(msg) = incoming_messages.recv().await {
+            info!("Received a message from Twitch: {:?}", msg);
+            
             // Log every message we receive
             match &msg {
                 ServerMessage::Privmsg(privmsg) => {

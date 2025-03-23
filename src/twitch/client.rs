@@ -118,15 +118,35 @@ impl TwitchClient {
     /// # Returns
     /// A Result indicating success or failure
     pub async fn join_channel(&mut self, channel: &str, username: &str) -> Result<()> {
-        let join_result = self.inner.join(channel.to_string());
+        // Log that we're trying to join
+        info!("Attempting to join channel: {}", channel);
+        
+        // Make sure channel name starts with #
+        let channel_name = if !channel.starts_with('#') {
+            format!("#{}", channel)
+        } else {
+            channel.to_string()
+        };
+        
+        info!("Formatted channel name for joining: {}", channel_name);
+        
+        let join_result = self.inner.join(channel_name.clone());
         
         // Check if join failed due to auth issues
         if let Err(e) = &join_result {
+            warn!("Join failed with error: {}", e);
             if e.to_string().contains("authentication") {
                 warn!("Join failed due to authentication issue, refreshing token: {}", e);
                 self.recreate_client(username).await?;
-                let _ = self.inner.join(channel.to_string());
+                let retry_result = self.inner.join(channel_name.clone());
+                if let Err(retry_err) = retry_result {
+                    warn!("Join retry failed after token refresh: {}", retry_err);
+                } else {
+                    info!("Join retry succeeded after token refresh");
+                }
             }
+        } else {
+            info!("Successfully joined channel: {}", channel_name);
         }
         
         Ok(())
@@ -142,14 +162,35 @@ impl TwitchClient {
     /// # Returns
     /// A Result indicating success or failure
     pub async fn send_message(&mut self, channel: &str, message: &str, username: &str) -> Result<()> {
-        match self.inner.say(channel.to_string(), message.to_string()).await {
-            Ok(_) => Ok(()),
+        // Format channel name correctly (must start with #)
+        let channel_name = if !channel.starts_with('#') {
+            format!("#{}", channel)
+        } else {
+            channel.to_string()
+        };
+        
+        info!("Sending message to {}: {}", channel_name, message);
+        
+        match self.inner.say(channel_name.clone(), message.to_string()).await {
+            Ok(_) => {
+                info!("Successfully sent message to {}", channel_name);
+                Ok(())
+            },
             Err(e) => {
+                warn!("Failed to send message: {}", e);
                 if e.to_string().contains("authentication") {
-                    warn!("Message send failed due to authentication issue, refreshing token: {}", e);
+                    warn!("Message send failed due to authentication issue, refreshing token");
                     self.recreate_client(username).await?;
-                    self.inner.say(channel.to_string(), message.to_string()).await?;
-                    Ok(())
+                    match self.inner.say(channel_name.clone(), message.to_string()).await {
+                        Ok(_) => {
+                            info!("Successfully sent message after token refresh");
+                            Ok(())
+                        },
+                        Err(retry_e) => {
+                            warn!("Still failed to send message after token refresh: {}", retry_e);
+                            Err(anyhow::anyhow!("Failed to send message after token refresh: {}", retry_e))
+                        }
+                    }
                 } else {
                     Err(anyhow::anyhow!("Failed to send message: {}", e))
                 }
