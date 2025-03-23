@@ -4,7 +4,7 @@ use std::any::Any;
 use twitch_irc::message::PrivmsgMessage;
 use tracing::{info, debug};
 use rand::prelude::IndexedRandom;
-use rand::thread_rng;
+use rand::rng;
 
 use crate::twitch::TwitchClient;
 use crate::users::UserManager;
@@ -114,7 +114,7 @@ impl WelcomeService {
     /// # Returns
     /// A personalized welcome message
     fn get_random_welcome_message(&self, username: &str) -> String {
-        let mut rng = thread_rng();
+        let mut rng = rng();
         
         // Get a random message template
         let template = if let Some(message) = self.welcome_messages.choose(&mut rng) {
@@ -178,13 +178,13 @@ impl WelcomeService {
                 let client_arc = self.client.clone();
                 let twitch_client = client_arc.downcast_ref::<TwitchClient>().unwrap();
                 let mut client_mut = twitch_client.clone();
-                // "channel" isn't the bot username, but it will be refreshed later if needed
-                client_mut.send_message(channel, &welcome_message, "bot").await?;
+                // Use channel name for the bot username parameter - the actual bot username will be used
+                client_mut.send_message(channel, &welcome_message, channel).await?;
             } 
             // For MockTwitchClient: handle in the mock implementation
             else if let Some(mock_client) = self.client.downcast_ref::<MockTwitchClient>() {
                 let mut mock_client = mock_client.clone();
-                mock_client.send_message(channel, &welcome_message, "bot").await?;
+                mock_client.send_message(channel, &welcome_message, channel).await?;
             }
         }
 

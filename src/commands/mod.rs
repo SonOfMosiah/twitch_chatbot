@@ -70,6 +70,14 @@ impl CommandRegistry {
     pub fn get_command<S: AsRef<str>>(&self, name: S) -> Option<Arc<dyn Command>> {
         self.commands.get(name.as_ref()).cloned()
     }
+    
+    /// Get all command names in the registry
+    ///
+    /// # Returns
+    /// A vector of command names
+    pub fn get_command_names(&self) -> Vec<String> {
+        self.commands.keys().cloned().collect()
+    }
 }
 
 #[cfg(test)]

@@ -11,6 +11,9 @@ Cargo.lock
 # Environment Variables
 .env
 
+# Data directory (contains OAuth tokens and user data)
+/data/
+
 # IDE files
 .idea/
 .vscode/

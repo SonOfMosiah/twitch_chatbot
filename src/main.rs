@@ -166,7 +166,7 @@ async fn start_bot(_debug: bool, prefix: String, channel_override: Option<String
     }
     
     // Create Twitch client with OAuth
-    let mut client = TwitchClient::new(&config, oauth_manager.clone()).await?;
+    let (incoming_messages, mut client) = TwitchClient::new(&config, oauth_manager.clone()).await?;
     
     // Set up user manager
     let users_file_path = format!("{}/known_users.txt", config.data_dir);
@@ -213,29 +213,50 @@ async fn start_bot(_debug: bool, prefix: String, channel_override: Option<String
         Arc::new(client.clone()),
         registry_arc.clone(),
         prefix,
+        config.bot_username.clone(), // Pass bot username for responding
     ));
     
     // Set up message handling
     info!("Setting up message handling");
-    let (_sender, mut receiver) = mpsc::channel(100);
     
     // Clone services for the async block
     let welcome_service_clone = welcome_service.clone();
     let command_handler_clone = command_handler.clone();
     let user_manager_clone = user_manager.clone();
+    let channel_name = config.channel_name.clone();
     
     // Spawn a task to process incoming messages
     tokio::spawn(async move {
-        while let Some(msg) = receiver.recv().await {
-            if let ServerMessage::Privmsg(privmsg) = msg {
-                // Process for welcome service
-                if let Err(e) = welcome_service_clone.process_message(&privmsg).await {
-                    error!("Error processing welcome: {}", e);
-                }
-                
-                // Process for command handling
-                if let Err(e) = command_handler_clone.handle_message(privmsg).await {
-                    error!("Error handling command: {}", e);
+        let mut incoming_messages = incoming_messages;
+        
+        info!("Waiting for messages...");
+        while let Some(msg) = incoming_messages.recv().await {
+            // Log every message we receive
+            match &msg {
+                ServerMessage::Privmsg(privmsg) => {
+                    info!("[CHAT] {}: {}", privmsg.sender.name, privmsg.message_text);
+                    
+                    // Process for welcome service
+                    if let Err(e) = welcome_service_clone.process_message(&privmsg).await {
+                        error!("Error processing welcome: {}", e);
+                    }
+                    
+                    // Process for command handling
+                    if let Err(e) = command_handler_clone.handle_message(privmsg.clone()).await {
+                        error!("Error handling command: {}", e);
+                    }
+                },
+                ServerMessage::Join(join) => {
+                    info!("[JOIN] {} joined the channel", join.user_login);
+                },
+                ServerMessage::Part(part) => {
+                    info!("[PART] {} left the channel", part.user_login);
+                },
+                ServerMessage::Notice(notice) => {
+                    info!("[NOTICE] Channel {}: {}", channel_name, notice.message_text);
+                },
+                _ => {
+                    debug!("Received other message type: {:?}", msg);
                 }
             }
         }

@@ -1,13 +1,14 @@
 use anyhow::Result;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, mpsc};
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::TwitchIRCClient;
 use twitch_irc::transport::tcp::{TCPTransport, NoTLS};
 use twitch_irc::ClientConfig;
+use twitch_irc::message::ServerMessage;
 use crate::config::Config;
 use crate::twitch::oauth::OAuthManager;
-use tracing::{info, warn};
+use tracing::{info, warn, debug};
 
 /// Represents a connection to Twitch chat
 #[derive(Clone)]
@@ -25,7 +26,7 @@ impl TwitchClient {
     ///
     /// # Returns
     /// A new TwitchClient instance
-    pub async fn new(config: &Config, oauth_manager: Arc<Mutex<OAuthManager>>) -> Result<Self> {
+    pub async fn new(config: &Config, oauth_manager: Arc<Mutex<OAuthManager>>) -> Result<(mpsc::Receiver<ServerMessage>, Self)> {
         // Get the current access token
         let token = {
             let mut manager = oauth_manager.lock().await;
@@ -40,12 +41,12 @@ impl TwitchClient {
             )
         );
 
-        let (_incoming_messages, inner) = TwitchIRCClient::<TCPTransport<NoTLS>, StaticLoginCredentials>::new(client_config);
+        let (incoming_messages, inner) = TwitchIRCClient::<TCPTransport<NoTLS>, StaticLoginCredentials>::new(client_config);
 
-        Ok(TwitchClient { 
+        Ok((incoming_messages, TwitchClient { 
             inner,
             oauth_manager,
-        })
+        }))
     }
     
     /// Recreate the client with a fresh token
@@ -82,7 +83,7 @@ impl TwitchClient {
     ///
     /// # Returns
     /// A new TwitchClient instance
-    pub fn new_with_static_auth(username: &str, token: &str) -> Self {
+    pub fn new_with_static_auth(username: &str, token: &str) -> (mpsc::Receiver<ServerMessage>, Self) {
         let client_config = ClientConfig::new_simple(
             StaticLoginCredentials::new(
                 username.to_string(),
@@ -90,7 +91,7 @@ impl TwitchClient {
             )
         );
 
-        let (_incoming_messages, inner) = TwitchIRCClient::<TCPTransport<NoTLS>, StaticLoginCredentials>::new(client_config);
+        let (incoming_messages, inner) = TwitchIRCClient::<TCPTransport<NoTLS>, StaticLoginCredentials>::new(client_config);
         
         // Create a dummy OAuth manager
         let oauth_manager = Arc::new(Mutex::new(
@@ -100,10 +101,10 @@ impl TwitchClient {
             )
         ));
 
-        TwitchClient { 
+        (incoming_messages, TwitchClient { 
             inner,
             oauth_manager,
-        }
+        })
     }
 
     /// Join a Twitch channel
