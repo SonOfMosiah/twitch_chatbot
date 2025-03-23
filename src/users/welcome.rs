@@ -20,6 +20,12 @@ impl MockTwitchClient {
         // Just return success without actually sending anything
         Ok(())
     }
+    
+    // Mock the send_reply method for testing
+    pub async fn send_reply(&mut self, _channel: &str, _message: &str, _reply_to: &str, _username: &str) -> Result<()> {
+        // Just return success without actually sending anything
+        Ok(())
+    }
 }
 
 /// Service to welcome new chatters in the channel

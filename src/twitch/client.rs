@@ -198,6 +198,57 @@ impl TwitchClient {
         }
     }
     
+    /// Send a reply to a specific message in a channel
+    ///
+    /// # Arguments
+    /// * `channel` - The channel to send the message to
+    /// * `message` - The message to send
+    /// * `reply_to` - The message ID to reply to
+    /// * `username` - The bot's username (needed for token refresh)
+    ///
+    /// # Returns
+    /// A Result indicating success or failure
+    pub async fn send_reply(&mut self, channel: &str, message: &str, reply_to: &str, username: &str) -> Result<()> {
+        // The Twitch IRC library wants lowercase channel name without # prefix
+        let channel_name = if channel.starts_with('#') {
+            channel.trim_start_matches('#').to_lowercase()
+        } else {
+            channel.to_lowercase()
+        };
+        
+        info!("Sending reply to message ID {} in {}: {}", reply_to, channel_name, message);
+        
+        // Create a custom Reply message - twitch-irc doesn't have a native reply function
+        // but we can use the IRC format for replies
+        let reply_message = format!("@reply-parent-msg-id={} {}", reply_to, message);
+        
+        match self.inner.say(channel_name.clone(), reply_message.clone()).await {
+            Ok(_) => {
+                info!("Successfully sent reply to {}", channel_name);
+                Ok(())
+            },
+            Err(e) => {
+                warn!("Failed to send reply: {}", e);
+                if e.to_string().contains("authentication") {
+                    warn!("Reply send failed due to authentication issue, refreshing token");
+                    self.recreate_client(username).await?;
+                    match self.inner.say(channel_name.clone(), reply_message.clone()).await {
+                        Ok(_) => {
+                            info!("Successfully sent reply after token refresh");
+                            Ok(())
+                        },
+                        Err(retry_e) => {
+                            warn!("Still failed to send reply after token refresh: {}", retry_e);
+                            Err(anyhow::anyhow!("Failed to send reply after token refresh: {}", retry_e))
+                        }
+                    }
+                } else {
+                    Err(anyhow::anyhow!("Failed to send reply: {}", e))
+                }
+            }
+        }
+    }
+    
     /// Get the OAuth manager used by this client
     ///
     /// # Returns

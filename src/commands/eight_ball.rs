@@ -110,22 +110,20 @@ impl EightBallCommand {
 }
 
 impl Command for EightBallCommand {
-    fn execute(&self, msg: &PrivmsgMessage, args: Vec<&str>) -> Result<Option<String>> {
+    fn execute(&self, _msg: &PrivmsgMessage, args: Vec<&str>) -> Result<Option<String>> {
         // If there are no arguments, prompt for a question
         if args.is_empty() {
             return Ok(Some("Ask me a question and I shall reveal your fate!".to_string()));
         }
         
-        // Join all arguments to form the question
+        // Join all arguments to form the question (just for internal use)
         let question = args.join(" ");
         
         // Get a response from the 8-ball
         let response = self.get_response(&question);
         
-        // Format the response
-        let username = &msg.sender.name;
-        // todo: might want to change the format here to just return the response
-        Ok(Some(format!("@{} asked: {} 🎱 {}", username, question, response)))
+        // Format the response - just return the answer with the 8-ball emoji
+        Ok(Some(format!("🎱 {}", response)))
     }
 
     fn help(&self) -> &str {
@@ -190,7 +188,7 @@ mod tests {
         
         // We can't check the exact response since it's random, but we can check the format
         let result = result.unwrap();
-        assert!(result.starts_with("@Test_User asked: Will I win? 🎱 "));
-        assert!(result.len() > 30); // Make sure there's a substantial response
+        assert!(result.starts_with("🎱 "));
+        assert!(result.len() > 10); // Make sure there's a substantial response
     }
 }

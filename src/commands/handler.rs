@@ -83,10 +83,17 @@ impl CommandHandler {
             info!("Found command '{}', executing", command_name);
             match command.execute(&msg, args) {
                 Ok(Some(response)) => {
-                    // Send the response to the chat
+                    // Send the response to the chat as a reply to the original command
                     info!("Command '{}' returning response: '{}'", command_name, response);
                     let mut client = self.client.as_ref().clone();
-                    client.send_message(&msg.channel_login, &response, &self.bot_username).await?;
+                    
+                    // For 8ball command, use reply to reference the original question
+                    if command_name == "8ball" {
+                        client.send_reply(&msg.channel_login, &response, &msg.message_id, &self.bot_username).await?;
+                    } else {
+                        // For other commands, use regular message
+                        client.send_message(&msg.channel_login, &response, &self.bot_username).await?;
+                    }
                 }
                 Ok(None) => {
                     // No response needed
