@@ -6,8 +6,9 @@ use crate::commands::Command;
 pub struct PingCommand;
 
 impl Command for PingCommand {
-    fn execute(&self, _msg: &PrivmsgMessage, _args: Vec<&str>) -> Result<Option<String>> {
-        Ok(Some("Pong!".to_string()))
+    fn execute(&self, msg: &PrivmsgMessage, _args: Vec<&str>) -> Result<Option<String>> {
+        // Echo the message and sender name to confirm we're receiving commands
+        Ok(Some(format!("Pong! Received from {} who said: {}", msg.sender.name, msg.message_text)))
     }
 
     fn help(&self) -> &str {
@@ -147,8 +148,8 @@ mod tests {
         // Execute the command
         let result = command.execute(&msg, Vec::new()).unwrap();
         
-        // Assert the result
-        assert_eq!(result, Some("Pong!".to_string()));
+        // Assert the result contains "Pong!"
+        assert!(result.unwrap().contains("Pong!"));
     }
     
     #[test]

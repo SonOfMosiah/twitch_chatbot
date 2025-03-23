@@ -85,11 +85,30 @@ mod tests {
     fn test_config_missing_env_vars() {
         // Remove environment variables to simulate missing configuration
         unsafe {
+            // Store original values if they exist
+            let orig_client_id = env::var("TWITCH_CLIENT_ID").ok();
+            let orig_channel = env::var("TWITCH_CHANNEL").ok();
+            let orig_username = env::var("TWITCH_BOT_USERNAME").ok();
+            
+            // Remove required variables
             env::remove_var("TWITCH_CLIENT_ID");
+            env::remove_var("TWITCH_CHANNEL");
+            env::remove_var("TWITCH_BOT_USERNAME");
+            
+            // Load config should fail
+            let result = Config::from_env();
+            assert!(result.is_err());
+            
+            // Restore original values
+            if let Some(val) = orig_client_id {
+                env::set_var("TWITCH_CLIENT_ID", val);
+            }
+            if let Some(val) = orig_channel {
+                env::set_var("TWITCH_CHANNEL", val);
+            }
+            if let Some(val) = orig_username {
+                env::set_var("TWITCH_BOT_USERNAME", val);
+            }
         }
-        
-        // Load config should fail
-        let result = Config::from_env();
-        assert!(result.is_err());
     }
 }

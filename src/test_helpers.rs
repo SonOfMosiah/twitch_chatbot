@@ -8,7 +8,9 @@ use tokio::sync::Mutex;
 
 /// Create a test TwitchClient that doesn't actually connect to Twitch
 pub fn create_test_client() -> TwitchClient {
-    TwitchClient::new_with_static_auth("test_bot", "test_token")
+    // Discard the message receiver as it's not needed for tests
+    let (_, client) = TwitchClient::new_with_static_auth("test_bot", "test_token");
+    client
 }
 
 /// Create a test config for unit tests

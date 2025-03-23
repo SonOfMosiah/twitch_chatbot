@@ -121,9 +121,9 @@ impl TwitchClient {
         // Log that we're trying to join
         info!("Attempting to join channel: {}", channel);
         
-        // Make sure channel name starts with #
-        let channel_name = if !channel.starts_with('#') {
-            format!("#{}", channel)
+        // The Twitch IRC library doesn't want the # prefix - let's remove it if it's there
+        let channel_name = if channel.starts_with('#') {
+            channel.trim_start_matches('#').to_string()
         } else {
             channel.to_string()
         };
@@ -162,9 +162,9 @@ impl TwitchClient {
     /// # Returns
     /// A Result indicating success or failure
     pub async fn send_message(&mut self, channel: &str, message: &str, username: &str) -> Result<()> {
-        // Format channel name correctly (must start with #)
-        let channel_name = if !channel.starts_with('#') {
-            format!("#{}", channel)
+        // The Twitch IRC library doesn't want the # prefix - let's remove it if it's there
+        let channel_name = if channel.starts_with('#') {
+            channel.trim_start_matches('#').to_string()
         } else {
             channel.to_string()
         };
