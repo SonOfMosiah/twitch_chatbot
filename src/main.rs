@@ -12,9 +12,9 @@ use std::fs::File;
 use std::io::Write;
 use std::sync::Arc;
 use tokio::sync::{RwLock, Mutex};
-use tokio::sync::mpsc;
+// tokio::sync::mpsc is imported via other modules
 use twitch_irc::message::ServerMessage;
-use tracing::{info, error, Level};
+use tracing::{info, error, debug, Level};
 use tracing_subscriber::FmtSubscriber;
 
 use cli::{Cli, Commands};
@@ -206,6 +206,8 @@ async fn start_bot(_debug: bool, prefix: String, channel_override: Option<String
         registry.register("uptime", Arc::new(UptimeCommand::new()));
         registry.register("8ball", Arc::new(EightBallCommand::new()));
         registry.register("help", Arc::new(HelpCommand::new(prefix.clone(), descriptions)));
+        
+        info!("Registered commands: ping, uptime, 8ball, help with prefix: '{}'", prefix);
     }
     
     // Create command handler
@@ -269,6 +271,7 @@ async fn start_bot(_debug: bool, prefix: String, channel_override: Option<String
     
     // Send a message to the channel to indicate the bot is running
     client.send_message(&config.channel_name, "SOM Chatbot is now online!", &config.bot_username).await?;
+    info!("Sent greeting message to channel: {}", config.channel_name);
     
     // Keep the application running
     info!("Bot is now running. Press Ctrl+C to exit.");

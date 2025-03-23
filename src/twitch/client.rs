@@ -1,6 +1,8 @@
 use anyhow::Result;
 use std::sync::Arc;
-use tokio::sync::{Mutex, mpsc};
+use tokio::sync::Mutex;
+// Just import the UnboundedReceiver which is what we need
+use tokio::sync::mpsc::UnboundedReceiver;
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::TwitchIRCClient;
 use twitch_irc::transport::tcp::{TCPTransport, NoTLS};
@@ -8,7 +10,7 @@ use twitch_irc::ClientConfig;
 use twitch_irc::message::ServerMessage;
 use crate::config::Config;
 use crate::twitch::oauth::OAuthManager;
-use tracing::{info, warn, debug};
+use tracing::{info, warn};
 
 /// Represents a connection to Twitch chat
 #[derive(Clone)]
@@ -26,7 +28,7 @@ impl TwitchClient {
     ///
     /// # Returns
     /// A new TwitchClient instance
-    pub async fn new(config: &Config, oauth_manager: Arc<Mutex<OAuthManager>>) -> Result<(mpsc::Receiver<ServerMessage>, Self)> {
+    pub async fn new(config: &Config, oauth_manager: Arc<Mutex<OAuthManager>>) -> Result<(UnboundedReceiver<ServerMessage>, Self)> {
         // Get the current access token
         let token = {
             let mut manager = oauth_manager.lock().await;
@@ -83,7 +85,7 @@ impl TwitchClient {
     ///
     /// # Returns
     /// A new TwitchClient instance
-    pub fn new_with_static_auth(username: &str, token: &str) -> (mpsc::Receiver<ServerMessage>, Self) {
+    pub fn new_with_static_auth(username: &str, token: &str) -> (UnboundedReceiver<ServerMessage>, Self) {
         let client_config = ClientConfig::new_simple(
             StaticLoginCredentials::new(
                 username.to_string(),
