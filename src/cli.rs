@@ -9,15 +9,15 @@ pub struct Cli {
     /// Sets a custom config file path
     #[arg(short, long, value_name = "FILE")]
     pub config: Option<String>,
-    
+
     /// Enable debug mode
     #[arg(short, long)]
     pub debug: bool,
-    
+
     /// The command prefix for the bot
     #[arg(short, long, default_value = "!")]
     pub prefix: String,
-    
+
     /// Subcommands
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -32,14 +32,14 @@ pub enum Commands {
         #[arg(short, long)]
         channel: Option<String>,
     },
-    
+
     /// Generate a sample .env file
     GenEnv {
         /// Path to output the sample .env file
         #[arg(default_value = ".env.example")]
         path: String,
     },
-    
+
     /// Authenticate with Twitch (get new tokens)
     Auth {
         /// Force re-authentication even if tokens exist
@@ -51,7 +51,7 @@ pub enum Commands {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn verify_cli() {
         use clap::CommandFactory;

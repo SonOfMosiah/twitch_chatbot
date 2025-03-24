@@ -1,15 +1,15 @@
-mod handler;
 mod basic;
 mod eight_ball;
+mod handler;
 
-use twitch_irc::message::PrivmsgMessage;
+use anyhow::Result;
 use std::collections::HashMap;
 use std::sync::Arc;
-use anyhow::Result;
+use twitch_irc::message::PrivmsgMessage;
 
-pub use handler::CommandHandler;
-pub use basic::{PingCommand, HelpCommand, UptimeCommand};
+pub use basic::{HelpCommand, PingCommand, UptimeCommand};
 pub use eight_ball::EightBallCommand;
+pub use handler::CommandHandler;
 
 /// Trait for defining chat commands
 pub trait Command: Send + Sync {
@@ -24,6 +24,7 @@ pub trait Command: Send + Sync {
     fn execute(&self, msg: &PrivmsgMessage, args: Vec<&str>) -> Result<Option<String>>;
 
     /// Get the help text for this command
+    #[allow(dead_code)]
     fn help(&self) -> &str;
 }
 
@@ -56,6 +57,7 @@ impl CommandRegistry {
     ///
     /// # Returns
     /// true if the command exists, false otherwise
+    #[allow(dead_code)]
     pub fn has_command<S: AsRef<str>>(&self, name: S) -> bool {
         self.commands.contains_key(name.as_ref())
     }
@@ -70,7 +72,7 @@ impl CommandRegistry {
     pub fn get_command<S: AsRef<str>>(&self, name: S) -> Option<Arc<dyn Command>> {
         self.commands.get(name.as_ref()).cloned()
     }
-    
+
     /// Get all command names in the registry
     ///
     /// # Returns
@@ -89,7 +91,10 @@ mod tests {
 
     impl Command for TestCommand {
         fn execute(&self, _msg: &PrivmsgMessage, args: Vec<&str>) -> Result<Option<String>> {
-            Ok(Some(format!("Test command executed with {} args", args.len())))
+            Ok(Some(format!(
+                "Test command executed with {} args",
+                args.len()
+            )))
         }
 
         fn help(&self) -> &str {
@@ -101,14 +106,14 @@ mod tests {
     fn test_command_registry() {
         let mut registry = CommandRegistry::new();
         let cmd = Arc::new(TestCommand);
-        
+
         // Register command
         registry.register("test", cmd);
-        
+
         // Check if command exists
         assert!(registry.has_command("test"));
         assert!(!registry.has_command("unknown"));
-        
+
         // Get command
         assert!(registry.get_command("test").is_some());
         assert!(registry.get_command("unknown").is_none());

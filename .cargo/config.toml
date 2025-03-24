@@ -1,0 +1,8 @@
+[build]
+rustflags = ["-Dwarnings"]
+
+[alias]
+lint = "clippy -- -W clippy::pedantic -W clippy::nursery -W clippy::unwrap_used -W clippy::expect_used"
+check-all = "clippy --all-targets --all-features -- -W clippy::pedantic"
+fix = "clippy --fix --allow-dirty --allow-staged"
+format-all = "fmt --all"

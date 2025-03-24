@@ -1,8 +1,8 @@
 use anyhow::Result;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tracing::{debug, error, info, warn};
 use twitch_irc::message::PrivmsgMessage;
-use tracing::{info, debug, error};
 
 use crate::commands::CommandRegistry;
 use crate::twitch::TwitchClient;
@@ -48,51 +48,72 @@ impl CommandHandler {
     /// A Result indicating success or failure
     pub async fn handle_message(&self, msg: PrivmsgMessage) -> Result<()> {
         let content = msg.message_text.trim();
-        
+
         debug!("Processing message for commands: '{}'", content);
         debug!("Command prefix: '{}'", self.prefix);
-        
+
         // Check if the message is a command (starts with the prefix)
         if !content.starts_with(&self.prefix) {
             debug!("Message does not start with prefix, ignoring");
             return Ok(());
         }
-        
+
         // Parse the command name and arguments
         let without_prefix = &content[self.prefix.len()..];
         let parts: Vec<&str> = without_prefix.split_whitespace().collect();
-        
+
         if parts.is_empty() {
             debug!("Empty command after prefix, ignoring");
             return Ok(());
         }
-        
+
         let command_name = parts[0].to_lowercase();
-        let args = if parts.len() > 1 { parts[1..].to_vec() } else { Vec::new() };
-        
+        let args = if parts.len() > 1 {
+            parts[1..].to_vec()
+        } else {
+            Vec::new()
+        };
+
         debug!("Command name: '{}', args: {:?}", command_name, args);
-        
+
         // Get the command from the registry
         let registry = self.registry.read().await;
-        
+
         // Log available commands for debugging
         let available_commands = registry.get_command_names();
         debug!("Available commands: {:?}", available_commands);
-        
+
         if let Some(command) = registry.get_command(&command_name) {
             info!("Found command '{}', executing", command_name);
             match command.execute(&msg, args) {
                 Ok(Some(response)) => {
-                    // Send the response to the chat as a reply to the original command
-                    info!("Command '{}' returning response: '{}'", command_name, response);
+                    // Send the response to the chat
+                    info!(
+                        "Command '{}' returning response: '{}'",
+                        command_name, response
+                    );
                     let mut client = self.client.as_ref().clone();
-                    
-                    // For 8ball command, use reply to reference the original question
-                    if command_name == "8ball" {
-                        client.send_reply(&msg.channel_login, &response, &msg.message_id, &self.bot_username).await?;
-                    } else {
-                        // For other commands, use regular message
-                        client.send_message(&msg.channel_login, &response, &self.bot_username).await?;
+
+                    // Use the message ID for replies
+                    let msg_id = &msg.message_id;
+                    // Try to use the reply API
+                    match client
+                        .send_reply(&msg.channel_login, &response, msg_id, &self.bot_username)
+                        .await
+                    {
+                        Ok(_) => {
+                            debug!("Successfully sent reply to message ID {}", msg_id);
+                        }
+                        Err(e) => {
+                            // If reply fails, fall back to normal message
+                            warn!(
+                                "Failed to send reply, falling back to normal message: {}",
+                                e
+                            );
+                            client
+                                .send_message(&msg.channel_login, &response, &self.bot_username)
+                                .await?;
+                        }
                     }
                 }
                 Ok(None) => {
@@ -107,7 +128,7 @@ impl CommandHandler {
         } else {
             debug!("Command '{}' not found in registry", command_name);
         }
-        
+
         Ok(())
     }
 }

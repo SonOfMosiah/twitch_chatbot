@@ -1,6 +1,6 @@
 use anyhow::Result;
-use std::env;
 use dotenv::dotenv;
+use std::env;
 
 /// Configuration for the Twitch chatbot
 pub struct Config {
@@ -16,24 +16,24 @@ pub struct Config {
 
 impl Config {
     /// Load configuration from environment variables
-    /// 
+    ///
     /// # Returns
     /// A Result containing the Config if successful, or an error if required variables are missing
     pub fn from_env() -> Result<Self> {
         dotenv().ok();
-        
+
         let client_id = env::var("TWITCH_CLIENT_ID")
             .map_err(|_| anyhow::anyhow!("TWITCH_CLIENT_ID environment variable not set"))?;
-        
+
         let channel_name = env::var("TWITCH_CHANNEL")
             .map_err(|_| anyhow::anyhow!("TWITCH_CHANNEL environment variable not set"))?;
-        
+
         let bot_username = env::var("TWITCH_BOT_USERNAME")
             .map_err(|_| anyhow::anyhow!("TWITCH_BOT_USERNAME environment variable not set"))?;
-            
+
         // Optional data directory, default to ./data
         let data_dir = env::var("DATA_DIR").unwrap_or_else(|_| "./data".to_string());
-        
+
         Ok(Config {
             client_id,
             channel_name,
@@ -41,9 +41,15 @@ impl Config {
             data_dir,
         })
     }
-    
+
     /// Create a new config directly from values (useful for testing)
-    pub fn new(client_id: String, channel_name: String, bot_username: String, data_dir: String) -> Self {
+    #[allow(dead_code)]
+    pub fn new(
+        client_id: String,
+        channel_name: String,
+        bot_username: String,
+        data_dir: String,
+    ) -> Self {
         Config {
             client_id,
             channel_name,
@@ -51,7 +57,7 @@ impl Config {
             data_dir,
         }
     }
-    
+
     /// Get the path to store the OAuth token
     pub fn get_token_path(&self) -> String {
         format!("{}/oauth_token.json", self.data_dir)
@@ -61,7 +67,6 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
 
     #[test]
     fn test_config_from_env() {
@@ -70,7 +75,7 @@ mod tests {
             "test_client_id".to_string(),
             "test_channel".to_string(),
             "test_bot".to_string(),
-            "./test_data".to_string()
+            "./test_data".to_string(),
         );
 
         // Assert values

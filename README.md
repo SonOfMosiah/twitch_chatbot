@@ -55,6 +55,20 @@ TWITCH_BOT_USERNAME=your_bot_account_name
 DATA_DIR=./data
 ```
 
+### Authenticate
+
+You can authenticate separately before starting the bot:
+
+```
+cargo run -- auth
+```
+
+If you've authenticated previously and need to update with new scopes:
+
+```
+cargo run -- auth --force
+```
+
 ### Start the bot
 
 ```
@@ -62,6 +76,8 @@ cargo run -- start
 ```
 
 The first time you run the bot, it will prompt you with a Twitch authorization URL and a code. Visit the URL on your browser, enter the code, and authorize the application. The bot will automatically store and refresh the tokens as needed.
+
+> **Note about OAuth Scopes**: The bot requires several OAuth scopes, including `user:write:chat` for replying to messages. If you previously authorized the bot without this scope, you'll need to re-authenticate using `cargo run -- auth --force` to get a new token with all required scopes.
 
 With debug output:
 
@@ -101,6 +117,36 @@ Options:
 cargo test
 ```
 
+### Code Style and Linting
+
+This project uses rustfmt for code formatting and clippy for linting. Several helpful aliases are defined in `.cargo/config.toml`:
+
+```bash
+# Format all code according to the rustfmt.toml configuration
+cargo fmt
+# or with custom alias:
+cargo format-all
+
+# Run clippy with strict linting rules
+cargo lint
+
+# Run clippy with fix suggestions applied automatically
+cargo fix
+
+# Check all targets and features with pedantic warnings
+cargo check-all
+```
+
+You can also run the standard commands:
+
+```bash
+# Check code formatting
+cargo fmt --check
+
+# Run clippy with default settings
+cargo clippy
+```
+
 ### Adding New Commands
 
 To add a new command, create a new struct that implements the `Command` trait, and register it in the command registry in `main.rs`:
@@ -133,7 +179,7 @@ The `WelcomeService` detects and welcomes first-time chatters. You can customize
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 

@@ -1,0 +1,25 @@
+# Clippy configuration file
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 25
+
+# Set allowed complexity
+too-many-arguments-threshold = 8
+type-complexity-threshold = 500
+
+# Documentation requirements
+doc-valid-idents = ["OAuth", "Twitch", "IRC", "API", "OAuth2", "JSON"]
+
+# Library choices
+disallowed-names = []
+disallowed-methods = []
+disallowed-types = []
+
+# Disable single-char-binding since it's often useful in lambda/closures
+single-char-binding-names-threshold = 1
+
+# Allow unwraps in tests
+allow-unwrap-in-tests = true
+
+# Allow expect in tests
+allow-expect-in-tests = true

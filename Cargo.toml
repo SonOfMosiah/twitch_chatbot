@@ -3,12 +3,18 @@ name = "som_chatbot"
 version = "0.1.0"
 edition = "2024"
 description = "A Twitch chatbot that runs locally"
-authors = ["SonOfMosiah"]
+authors = ["SonOfMosiah <dev@sonofmosiah.xyz>"]
+license = "MIT"
+repository = "https://github.com/sonofmosiah/som_chatbot"
+readme = "README.md"
+keywords = ["twitch", "chatbot", "irc", "helix", "api"]
 
 [dependencies]
 clap = { version = "4.5.31", features = ["derive"] }
 tokio = { version = "1.43.0", features = ["full"] }
+# Use the official twitch-irc crate from crates.io
 twitch-irc = { version = "5.0.1", features = ["transport-tcp", "refreshing-token-native-tls"] }
+# We're using direct Helix API calls with reqwest
 anyhow = "1.0.96"
 dotenv = "0.15"
 tracing = "0.1.41"
@@ -19,7 +25,10 @@ reqwest = { version = "0.11", features = ["json", "multipart"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 async-trait = "0.1"
+colored = "2.1"
+futures = "0.3"
 
 [dev-dependencies]
 tempfile = "3.10.0"
 mockito = "1.2.0"
+assert-json-diff = "2.0"

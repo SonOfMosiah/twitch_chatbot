@@ -1,11 +1,11 @@
 mod welcome;
 
-use std::collections::HashSet;
-use std::sync::RwLock;
 use anyhow::Result;
-use tokio::fs;
+use std::collections::HashSet;
 use std::path::Path;
-use tracing::{info, debug};
+use std::sync::RwLock;
+use tokio::fs;
+use tracing::{debug, info};
 
 pub use welcome::WelcomeService;
 
@@ -38,7 +38,7 @@ impl UserManager {
     /// A Result indicating success or failure
     pub async fn load(&self) -> Result<()> {
         let path = Path::new(&self.users_file_path);
-        
+
         // If the file doesn't exist, return without error
         if !path.exists() {
             debug!("Known users file doesn't exist yet. Starting with empty set.");
@@ -62,7 +62,11 @@ impl UserManager {
             *known_users = users;
         }
 
-        info!("Loaded {} known users from {}", self.known_users.read().unwrap().len(), self.users_file_path);
+        info!(
+            "Loaded {} known users from {}",
+            self.known_users.read().unwrap().len(),
+            self.users_file_path
+        );
         Ok(())
     }
 
@@ -80,7 +84,7 @@ impl UserManager {
 
         // Create the content as a sorted list of user IDs
         let content = users.join("\n");
-        
+
         // Ensure the directory exists
         if let Some(parent) = Path::new(&self.users_file_path).parent() {
             if !parent.exists() {
@@ -90,8 +94,12 @@ impl UserManager {
 
         // Write to the file
         fs::write(&self.users_file_path, content).await?;
-        
-        debug!("Saved {} known users to {}", users.len(), self.users_file_path);
+
+        debug!(
+            "Saved {} known users to {}",
+            users.len(),
+            self.users_file_path
+        );
         Ok(())
     }
 
@@ -104,7 +112,7 @@ impl UserManager {
     /// true if this is the first time seeing this user, false otherwise
     pub fn is_first_time_chatter(&self, user_id: &str) -> bool {
         let mut known_users = self.known_users.write().unwrap();
-        
+
         if known_users.contains(user_id) {
             // User already known
             false
@@ -119,19 +127,19 @@ impl UserManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::NamedTempFile;
     use std::io::Write;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_first_time_chatter() {
         let user_manager = UserManager::new("test_users.txt");
-        
+
         // First time should be true
         assert!(user_manager.is_first_time_chatter("user1"));
-        
+
         // Second time should be false
         assert!(!user_manager.is_first_time_chatter("user1"));
-        
+
         // Different user should be true
         assert!(user_manager.is_first_time_chatter("user2"));
     }
@@ -142,29 +150,29 @@ mod tests {
         let mut temp_file = NamedTempFile::new()?;
         let initial_users = "user1\nuser2\nuser3";
         write!(temp_file, "{}", initial_users)?;
-        
+
         let temp_path = temp_file.path().to_str().unwrap().to_string();
         let user_manager = UserManager::new(&temp_path);
-        
+
         // Load the users
         user_manager.load().await?;
-        
+
         // Check if the users were loaded
         assert!(!user_manager.is_first_time_chatter("user1"));
         assert!(!user_manager.is_first_time_chatter("user2"));
         assert!(!user_manager.is_first_time_chatter("user3"));
         assert!(user_manager.is_first_time_chatter("user4"));
-        
+
         // Save the users
         user_manager.save().await?;
-        
+
         // Read the file and check its contents
         let content = fs::read_to_string(&temp_path).await?;
         let mut lines: Vec<&str> = content.lines().collect();
         lines.sort();
-        
+
         assert_eq!(lines, vec!["user1", "user2", "user3", "user4"]);
-        
+
         Ok(())
     }
 }

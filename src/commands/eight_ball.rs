@@ -1,6 +1,6 @@
 use anyhow::Result;
-use rand::prelude::{SliceRandom, IndexedRandom};
-use rand::{rng};
+use rand::prelude::IndexedRandom;
+use rand::rng;
 use twitch_irc::message::PrivmsgMessage;
 
 use crate::commands::Command;
@@ -88,7 +88,7 @@ impl EightBallCommand {
     /// A string response to the question
     fn get_random_response(&self, _question: &str) -> String {
         let mut rng = rng();
-        
+
         // First, choose a random response type
         if let Some((_, responses)) = self.responses.choose(&mut rng) {
             // Then choose a random response of that type
@@ -96,11 +96,11 @@ impl EightBallCommand {
                 return response.to_string();
             }
         }
-        
+
         // Fallback in case something goes wrong
         "The magic 8-ball is cloudy right now.".to_string()
     }
-    
+
     /// In the future, this could be replaced with an AI-based response selector
     fn get_response(&self, question: &str) -> String {
         // Currently just returns a random response
@@ -113,15 +113,17 @@ impl Command for EightBallCommand {
     fn execute(&self, _msg: &PrivmsgMessage, args: Vec<&str>) -> Result<Option<String>> {
         // If there are no arguments, prompt for a question
         if args.is_empty() {
-            return Ok(Some("Ask me a question and I shall reveal your fate!".to_string()));
+            return Ok(Some(
+                "Ask me a question and I shall reveal your fate!".to_string(),
+            ));
         }
-        
+
         // Join all arguments to form the question (just for internal use)
         let question = args.join(" ");
-        
+
         // Get a response from the 8-ball
         let response = self.get_response(&question);
-        
+
         // Format the response - just return the answer with the 8-ball emoji
         Ok(Some(format!("🎱 {}", response)))
     }
@@ -134,9 +136,9 @@ impl Command for EightBallCommand {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use twitch_irc::message::{IRCMessage, IRCTags, IRCPrefix, TwitchUserBasics, Badge, Emote};
     use chrono::Utc;
-    
+    use twitch_irc::message::{Badge, Emote, IRCMessage, IRCPrefix, IRCTags, TwitchUserBasics};
+
     fn create_dummy_privmsg() -> PrivmsgMessage {
         let irc_message = IRCMessage {
             tags: IRCTags::new(),
@@ -144,9 +146,12 @@ mod tests {
                 host: "test_user!test_user@test_user.tmi.twitch.tv".to_string(),
             }),
             command: "PRIVMSG".to_string(),
-            params: vec!["#test_channel".to_string(), "!8ball Will I win?".to_string()],
+            params: vec![
+                "#test_channel".to_string(),
+                "!8ball Will I win?".to_string(),
+            ],
         };
-        
+
         PrivmsgMessage {
             channel_login: "test_channel".to_string(),
             message_text: "!8ball Will I win?".to_string(),
@@ -167,25 +172,28 @@ mod tests {
             is_action: false,
         }
     }
-    
+
     #[test]
     fn test_eight_ball_command_no_args() {
         let command = EightBallCommand::new();
         let msg = create_dummy_privmsg();
-        
+
         // Execute the command with no arguments
         let result = command.execute(&msg, Vec::new()).unwrap();
-        assert_eq!(result, Some("Ask me a question and I shall reveal your fate!".to_string()));
+        assert_eq!(
+            result,
+            Some("Ask me a question and I shall reveal your fate!".to_string())
+        );
     }
-    
+
     #[test]
     fn test_eight_ball_command_with_question() {
         let command = EightBallCommand::new();
         let msg = create_dummy_privmsg();
-        
+
         // Execute the command with a question
         let result = command.execute(&msg, vec!["Will", "I", "win?"]).unwrap();
-        
+
         // We can't check the exact response since it's random, but we can check the format
         let result = result.unwrap();
         assert!(result.starts_with("🎱 "));
