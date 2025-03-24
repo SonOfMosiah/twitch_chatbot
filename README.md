@@ -31,12 +31,33 @@ A Twitch chatbot with OAuth integration, welcome messages for first-time chatter
 
 ## Installation
 
+### Option 1: Build from source
+
 1. Clone the repository
 2. Build the project:
    ```
    cargo build --release
    ```
 3. Create a `.env` file with your Twitch credentials (see `.env.example`)
+
+### Option 2: Install as a global binary
+
+You can install the chatbot as a global binary, which allows you to run it from anywhere using the `som_chatbot` command:
+
+```bash
+# Install from the cloned repository
+cargo install --path .
+
+# Or install directly from GitHub
+cargo install --git https://github.com/sonofmosiah/som_chatbot
+
+# Now you can run it using:
+som_chatbot --help
+som_chatbot start
+som_chatbot auth
+```
+
+After installation, you'll still need to create a `.env` file in the directory where you run the command.
 
 ## Usage
 
@@ -200,6 +221,7 @@ Pull requests are welcome. For major changes, please open an issue first to disc
     - `mod.rs` - Twitch module exports
     - `client.rs` - Twitch chat client
     - `oauth.rs` - OAuth authentication flow
+    - `helix.rs` - Helix API client for chat operations
   - `users/` - User management
     - `mod.rs` - User tracking system
     - `welcome.rs` - First-time chatter welcome system
